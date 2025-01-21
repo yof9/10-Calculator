@@ -1,0 +1,78 @@
+* {
+    /* outline: red 1px solid; */
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+html, body {
+    font-size: 10px;
+    width: 100vw;
+    height: 100vh;
+}
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.container {
+    padding: 1rem;
+    background-color: rgb(0, 0, 0);
+    min-width: 20rem;
+    width: min(70%, 30rem);
+    min-width: 310px;
+    max-height: clamp(350px, 80%, 40rem);
+}
+.history {
+    display: flex;
+    visibility: hidden;
+    flex-direction: column-reverse;
+    overflow-y: auto;
+    height: 70%;
+    width: 70%;
+}
+.wrapper:nth-child(2) {
+    height: 6em;
+    background-image: linear-gradient(180deg, rgb(231, 229, 71) 30%, rgb(231, 228, 209));
+    text-align: right;
+    .expression {
+        height: 50%;
+        font-size: 1.5rem;
+    }
+    .eval {
+        height: 50%;
+        font-size: 2rem;
+    }
+}
+.wrapper:nth-child(2), .row {
+    padding: .5rem 1rem;
+}
+.row{
+    background-color: rgb(128, 128, 128);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+.char{
+    font-size: 1.5rem;
+    font-weight: 800;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    text-align: center;  
+    vertical-align: middle;
+    border: none; 
+
+}
+.row1 .char1 {
+    background-color: rgb(219, 17, 17);
+    color: rgb(240, 236, 236);
+}
+.row6 .char4 {
+    background-color: rgb(7, 119, 4);
+    color: rgb(240, 236, 236);
+}
+.char:active{
+    scale: 120%;
+    background-color: rgb(4, 129, 167);
+}

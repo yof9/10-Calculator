@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="./imgs/favicon.png" type="image/png" title="calculator icon">
+    <link rel="stylesheet" href="./calculator.css">
+    <script src="./calculator.js" defer></script>
+
+    <title>Calculator</title>
+
+</head>
+<body>
+
+    <div class="container">
+        <div class="history">
+            <div class="history-header">
+                <span>History</span>
+                <button data-value="close">X</button>
+                <div class="history-values"></div>
+            </div>
+        </div>
+        <div class="wrapper">
+            <div class="expression"></div>
+            <div class="eval"></div>
+        </div>
+        <div class="wrapper">
+            <div class="row row1">
+                <button class="char char1" data-value="clear">C</button>
+                <button class="char char2" data-value="history">...</button>
+                <button class="char char3" data-value="()">(&nbsp;)</button>
+                <button class="char char4" data-value="delete">DEL</button>
+            </div>
+            <div class="row row2">
+                <button class="char char1" data-value="square-root">&radic;</button>
+                <button class="char char2" data-value="^">x<sup>y</sup></button>
+                <button class="char char3" data-value="%">%</button>
+                <button class="char char4" data-value="/">&divide;</button>
+            </div>
+            <div class="row row3">
+                <button class="char char1" data-value="7">7</button>
+                <button class="char char2" data-value="8" >8</button>
+                <button class="char char3" data-value="9">9</button>
+                <button class="char char4" data-value="*">&times;</button>
+            </div>
+            <div class="row row4">
+                <button class="char char1" data-value="4">4</button>
+                <button class="char char2" data-value="5">5</button>
+                <button class="char char3" data-value="6">6</button>
+                <button class="char char4" data-value="-">&minus;</button>
+            </div>
+            <div class="row row5">
+                <button class="char char1" data-value="1">1</button>
+                <button class="char char2" data-value="2">2</button>
+                <button class="char char3" data-value="3">3</button>
+                <button class="char char4" data-value="+">+</button>
+            </div>
+            <div class="row row6">
+                <button class="char char1" data-value="negative">&minus;/+</button>
+                <button class="char char2" data-value="0">0</button>
+                <button class="char char3" data-value=".">.</button>
+                <button class="char char4" data-value="=">=</button>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>
