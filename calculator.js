@@ -1,21 +1,14 @@
+"use strict";
+
+const historyDisplay = document.querySelector('.history-values');
+const expression = document.querySelector('.expression');
+const expVal = document.querySelector('.eval');
+let expCalc = expression.textContent;
+
 const cl = console.log;
-// expression is passed by refernce, so changed, expCalc isn't
-function appendMultiply(expression, expCalc) {
+function appendMultiply() {
     expression.textContent += "×";      
     expCalc += "*";
-    return expCalc 
-}
-
-// Note: below expCalc is passed by value, so not changed. while expVal is passed by reference, so changed
-function updateResult(expCalc, expVal) {
-
-    // Pad end with ")", to account for unclosed parenthesis
-    let parenthesisMissing = expCalc.split("(").length - expCalc.split(")").length
-    expCalc = expCalc.padEnd(expCalc.length + parenthesisMissing, ')')
-
-    // If evaluated expression is a number, then display it
-    let evaluated = evaluate(expCalc);
-    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? evaluated : '';
 }
 
 function operate (a,b, operator) {
@@ -102,150 +95,132 @@ function evaluate(exp) {
     return evaluate(exp);
 
 }
-document.addEventListener('DOMContentLoaded', function() {
-    "use strict";
-    const expression = document.querySelector('.expression');
-    const expVal = document.querySelector('.eval');
-    let expCalc = expression.textContent;
-    let history = null;
-    let historyDisplay = document.querySelector('.history-values');
 
+// Note: below expCalc is passed by value, so not changed. while expVal is passed by reference, so changed
+function updateResult() {
+
+    // Pad end with ")", to account for unclosed parenthesis
+    let parenthesisMissing = expCalc.split("(").length - expCalc.split(")").length
+    let expCalcTemp = expCalc.padEnd(expCalc.length + parenthesisMissing, ')')
+
+    // If evaluated expression is a number, then display it
+    let evaluated = evaluate(expCalcTemp);
+    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? evaluated : '';
+}
+
+function parseInput(btn) {
+    switch(btn.getAttribute("data-value")) {
+        case 'clear':
+
+            // Clear all
+            expression.textContent = expVal.textContent = expCalc = '';
+            break;
+
+        case "delete":
+
+            // Delete last character
+            expression.textContent = expression.textContent.slice(0, -1);
+            expCalc = expCalc.slice(0, -1);
+            updateResult();
+            break;
+
+        case 'history':
+
+            // TODO: Open history display with expression, closing unclosed parenthesis
+            break;
+
+        case 'close':
+
+            // TODO: close history display
+            break;
+
+        case 'square-root':
+
+            // add square root symbols
+            if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+
+            expression.textContent += '√(', expCalc += '√(', expVal.textContent = '';
+            break;
+
+        case 'negative':
+            if(expression.textContent.endsWith(".")) break; 
+            // add negative symbols
+            if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+
+            expression.textContent += '(-', expCalc += '(-', expVal.textContent = '';
+            break;
+
+        case '=':
+
+            // Todo: append expression to history, clear expressions, add a way to restore dispaly to original
+            // Todo: display history
+            if(expression.textContent.endsWith(".")) break;
+            break;
+
+        case '()':
+
+            // Open if empty, operator/"("" precedes it, or equal numbers of open and close parenthesis
+            if (
+                !expression.textContent ||
+                /[\(\^\*\÷\+\-\√\.]/.test(expression.textContent.at(-1)) || 
+                expression.textContent.split("(").length === 
+                expression.textContent.split(")").length
+            ) {
+
+                // If last inputted value is a number or close parenthesis, then append "*(" to expression
+                if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+                expression.textContent += "(", expCalc += "(", expVal.textContent = '';
+            }
+            else {
+                expression.textContent += ")", expCalc += ")";
+                updateResult();   
+            }
+            break;
+        
+        case ".": 
+            if(expression.textContent.endsWith(".")) break;
+            
+            if (/[\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+            
+            // If last inputted value is not a number, then append "0" before "."
+            if (!expression.textContent || /\D/.test(expression.textContent.at(-1))) {
+                expression.textContent += "0", expCalc += "0";    
+            }
+
+            expression.textContent += btn.textContent, expCalc += btn.textContent;
+            expVal.textContent = '';    
+            break;
+
+        default:
+
+            // Append numbers
+            if (/^\d$/.test(btn.textContent)){
+                
+                if (/[\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+        
+                expression.textContent += btn.textContent, expCalc += btn.textContent;
+                updateResult();
+            }
+            
+            // Append symbols
+            else if (/[\%\^\*\/\+\-]/.test(btn.getAttribute("data-value"))) {
+                if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
+                    
+                    expression.textContent += btn.textContent, expCalc += btn.getAttribute("data-value");
+                    
+                    if (btn.textContent === "%") updateResult();
+                    else expVal.textContent = '';
+                }
+            }
+    }
+} 
+document.addEventListener('DOMContentLoaded', function() {
     let btns = document.querySelectorAll('button');
     btns.forEach(btn => {
         btn.addEventListener('click', function(event) {
-            // If last inputted value isn't "."
-            if (!expression.textContent || expression.textContent.at(-1) !== ".") {
-                switch(this.getAttribute('data-value')) {
-                    case 'clear':
-
-                        // Clear all
-                        expression.textContent = expVal.textContent = expCalc = '';
-                        
-                        break;
-
-                    case "delete":
-
-                        // Delete last character
-                        expression.textContent = expression.textContent.slice(0, -1);
-                        expCalc = expCalc.slice(0, -1);
-                        updateResult(expCalc, expVal);
-                    
-                        break;
-
-                    case 'history':
-
-                        // TODO: Open history display with expression, closing unclosed parenthesis
-                        break;
-
-                    case 'close':
-
-                        // TODO: close history display
-                        break;
-
-                    case 'square-root':
-
-                        // add square root symbols
-                        if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
-                            expCalc = appendMultiply(expression, expCalc);
-                        }
-
-                        expression.textContent += '√(', expCalc += '√(', expVal.textContent = '';
-                   
-                        break;
-
-                    case 'negative':
-                        // add negative symbols
-                        if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
-                            expCalc = appendMultiply(expression, expCalc);
-                        }
-
-                        expression.textContent += '(-', expCalc += '(-', expVal.textContent = '';
-
-                        break;
-
-                    case '=':
-
-                        // Todo: append expression to history, clear expressions, add a way to restore dispaly to original
-                        // Todo: display history
-                        break;
-                    case '()':
-
-                        // Open if empty, operator/"("" precedes it, or equal numbers of open and close parenthesis
-                        if (
-                            !expression.textContent ||
-                            /[\(\^\*\÷\+\-\√]/.test(expression.textContent.at(-1)) || 
-                            expression.textContent.split("(").length === 
-                            expression.textContent.split(")").length
-                        ) {
-
-                            // If last inputted value is a number or close parenthesis, then append "*(" to expression
-                            if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
-                                expCalc = appendMultiply(expression, expCalc);
-                            }
-                            expression.textContent += "(", expCalc += "(", expVal.textContent = '';
-                        }
-                        else {
-                            expression.textContent += ")", expCalc += ")";
-                            updateResult(expCalc, expVal);   
-                        }
-                        
-                        break;
-                    
-                    case ".": 
-
-                        if (/[\)\%]/.test(expression.textContent.at(-1))){
-                            expCalc = appendMultiply(expression, expCalc);
-                        }
-                        // If last inputted value is not a number, then append "0" before "."
-                        if (!expression.textContent || /\D/.test(expression.textContent.at(-1))) {
-                            expression.textContent += "0", expCalc += "0";    
-                        }
-                        expression.textContent += this.textContent, expCalc += this.textContent;
-                        expVal.textContent = '';
-                       
-                        break;
-
-                    default:
-
-                        // Append symbols
-                        if (/[\%\^\*\/\+\-]/.test(this.getAttribute("data-value"))) {
-                            if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
-                                
-                                expression.textContent += this.textContent, expCalc += this.getAttribute("data-value");
-                                
-                                if (this.textContent === "%") {
-                                    updateResult(expCalc, expVal);
-                                }
-                                else {
-                                    expVal.textContent = '';
-                                }
-                            }
-                          }
-
-                        // Append numbers
-                        else if (/^\d$/.test(this.textContent)){
-                            
-                            if (/[\)\%]/.test(expression.textContent.at(-1))) {
-                                expCalc = appendMultiply(expression, expCalc);
-                            }
-
-                            expression.textContent += this.textContent, expCalc += this.textContent;
-                            updateResult(expCalc, expVal);
-                        }
-                }
-            }
-            // If last inputted value was "." then only accept decimal numbers
-            else {
-                
-                if (/^\d+$/.test(this.textContent)) {
-                    expression.textContent += this.textContent, expCalc += this.textContent;
-                    updateResult(expCalc, expVal); 
-                }
-
-            }
+            parseInput(btn);
         });
     });   
 });
-//run 11/2-.5>> problem in equals function(-)
-
-//btns del clear don't work after "." is added
+//run 2×(0.5)−2>> problem in equals function(-)
+// keyboard functionality
