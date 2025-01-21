@@ -50,50 +50,39 @@ function equals(exp) {
         else exp = expNew;
     }
     
-    // Eval exponentials, multiplications, divisions, sums and substractions
+    // Eval exponentials, multiplications, divisions, sums and substractions(comes before sum to account for ltr)
     let regExp = null;
-    let i = 0, j = 0;
-    for (let operator of ['^', '*', '/', '+', '-']) {
-        cl(111111111, i, j ,"   ",expNew)
-        regExp = new RegExp(`(?<!\\d)(-?\\d+(?:\\.\\d+)?)([\\${operator}])(-?\\d+(?:\\.\\d+)?)`);
+    for (let operator of ['\\^', '\\*\\/', '\\-\\+']) {
+        regExp = new RegExp(`(?<!\\d)(-?\\d+(?:\\.\\d+)?)([${operator}])(-?\\d+(?:\\.\\d+)?)`);
         // While there are still operators to evaluate, make sure "-" is not a negative sign
         while(regExp.test(exp)) {
             
-            expNew = exp.replace(regExp, ($0, $1, $2, $3) => {
-                cl("items",exp, expNew, $0,+$1, $3, $2)
-                return operate(+$1, +$3, $2) ?? $0
-            });
-            cl(111111111, i, j ,"   ",expNew)
+            expNew = exp.replace(regExp, ($0, $1, $2, $3) => operate(+$1, +$3, $2) ?? $0);
             if (expNew === exp) return NaN;
             else exp = expNew;
-            j++;
         }
-        i++;
     }
 
     return exp;
 }
+
 function evaluate(exp) {
     
     // If empty, NaN (NaN doesn't equal itself) or number
-    if (!exp ||exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) {
-        cl("dd", exp)
-        return exp;
-    }
+    if (!exp ||exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) {cl(11111111)
+        return exp;}
+    
     // Do root, exponential, multiplication, division, percentage, addition, subtraction
-    if (!/[\(\)]+$/g.test(exp)) {
-        cl("equalss", equals(exp), exp)
-        return equals(exp);
-    }
+    if (!/[()]/g.test(exp)) {cl(222222222)
+    return equals(exp);}
 
     // Loop over all internal parenthesis replace them with their evaluated value
-    for (let ex of exp.matchAll(/\(([^\(\)]+)\)/g)) {
+    for (let ex of exp.matchAll(/\(([^\(\)]*)\)/g)) {
         exp = exp.replace(ex[0], evaluate(ex[1]));
     }
 
     // Call evaluate again to evaluate the new expression
-    return evaluate(exp);
-
+    return evaluate(exp)
 }
 
 // Note: below expCalc is passed by value, so not changed. while expVal is passed by reference, so changed
@@ -205,8 +194,11 @@ function parseInput(btn) {
             // Append symbols
             else if (/[\%\^\*\/\+\-]/.test(btn.getAttribute("data-value"))) {
                 if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
-                    
-                    expression.textContent += btn.textContent, expCalc += btn.getAttribute("data-value");
+
+                    //account for operator difference in "/", "*", "^"
+                    if (btn.getAttribute("data-value") === "^") expression.textContent += btn.getAttribute("data-value");
+                    else expression.textContent += btn.textContent;
+                    expCalc += btn.getAttribute("data-value");
                     
                     if (btn.textContent === "%") updateResult();
                     else expVal.textContent = '';
@@ -224,3 +216,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 //run 2×(0.5)−2>> problem in equals function(-)
 // keyboard functionality
+// round diplay
