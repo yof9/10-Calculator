@@ -1,10 +1,10 @@
 "use strict";
 
-const historyDisplay = document.querySelector('.history-values');
+const history = document.querySelector('.history');
 const expression = document.querySelector('.expression');
 const expVal = document.querySelector('.eval');
 let expCalc = expression.textContent;
-
+const cl = console.log;
 function appendMultiply() {
     expression.textContent += "×";      
     expCalc += "*";
@@ -45,16 +45,17 @@ function equals(exp) {
     
     let expNew = exp;
     // Eval percentages
-    while(expNew = exp.replace(/(?<!\d)(\-?\d+(?:\.\d+)?)(%)/, ($0, $1, $2) => operate(+$1, null, $2) ?? $0)) {
+    while(exp.includes("%")) {
+        expNew = exp.replace(/(?<!\d)(\-?\d+(?:\.\d+)?)(%)/, ($0, $1, $2) => operate(+$1, null, $2) ?? $0);
         if (expNew === exp) return NaN;
         else exp = expNew;
     }
     // Eval roots
-    while(exp.inew = exp.replace(/(√)(-?\d+(?:\.\d+)?)/, ($0, $1, $2) => operate(+$2, null, $1) ?? $0)) {
+    while(exp.includes("√")) {
+        expNew = exp.replace(/(√)(-?\d+(?:\.\d+)?)/, ($0, $1, $2) => operate(+$2, null, $1) ?? $0);
         if (expNew === exp) return NaN;
         else exp = expNew;
     }
-    
     // Eval exponentials, multiplications & divisions, sums & substractions(ltr)
     let regExp = null;
     for (let operator of ['\\^', '\\*\\/', '\\-\\+']) {
@@ -89,20 +90,21 @@ function evaluate(exp) {
     return evaluate(exp)
 }
 
-// Note: below expCalc is passed by value, so not changed. while expVal is passed by reference, so changed
-function updateResult() {
+function padWithParenthesis(exp) {
 
-    // Pad end with ")", to account for unclosed parenthesis
-    let parenthesisMissing = expCalc.split("(").length - expCalc.split(")").length
-    let expCalcTemp = expCalc.padEnd(expCalc.length + parenthesisMissing, ')')
-
-    // If evaluated expression is a number, then display it
-    let evaluated = evaluate(expCalcTemp);
-    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? evaluated : '';
+    let parenthesisMissing = exp.split("(").length - exp.split(")").length
+    return exp.padEnd(expCalc.length + parenthesisMissing, ')');
 }
 
-function parseInput(btn) {
-    switch(btn.getAttribute("data-value")) {
+function updateResult() {
+
+    // Pad then evaluate
+    let evaluated = evaluate(padWithParenthesis(expCalc));
+    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? Math.round(evaluated*1e10)/1e10  : '';
+}
+let pressed = null;
+function parseInput(input) {
+    switch(input) {
         case 'clear':
 
             // Clear all
@@ -119,12 +121,14 @@ function parseInput(btn) {
 
         case 'history':
 
-            // TODO: Open history display with expression, closing unclosed parenthesis
+            // Open history display with expression history
+            history.getAttribute("class").includes("visible") ? undefined : history.classList.toggle("visible");
             break;
 
         case 'close':
 
             // TODO: close history display
+            history.getAttribute("class").includes("visible") ? history.classList.toggle("visible") : undefined;
             break;
 
         case 'square-root':
@@ -137,25 +141,27 @@ function parseInput(btn) {
 
         case 'negative':
             if(expression.textContent.endsWith(".")) break; 
+            
             // add negative symbols
             if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
 
-            expression.textContent += '(-', expCalc += '(-', expVal.textContent = '';
+            expression.innerHTML += '(&minus;', expCalc += '(-', expVal.textContent = '';
             break;
 
         case '=':
 
-            // Todo: append expression to history, clear expressions, add a way to restore dispaly to original
-            // Todo: display history
+            // Stack expression to history, clear expressions
+            if(!/^\-?\d+(?:\.\d+)?$/.test(expVal.textContent.toString())) break;
 
-            // If value not a number return
-            if(!/^\-?\d+(?:\.\d+)?$/g.test(expVal)) break;
-            historyDisplay.innerHTML += `<div>
-                                            <div>${expression.textContent}</div>
-                                            <div class="stored-eval">=${expVal.textContent}</div>
-                                        </div>`;
-            expression.textContent = expVal;
-            expCalc.textContent = expVal.textContent = ""; 
+            let previousExp = history.querySelector(".history-values :firstChild");
+            let newExp = document.createElement("div");
+            
+            newExp.innerHTML = `<div>${padWithParenthesis(expression.textContent)}</div>
+                                <div class="stored-eval">=${expVal.textContent}</div>`;
+            referneceNode.parentElement.insertBefore(previousExp, newExp)
+
+            expression.textContent = expCalc = expVal.textContent;
+            expVal.textContent = "";
             break;
 
         case '()':
@@ -188,44 +194,64 @@ function parseInput(btn) {
                 expression.textContent += "0", expCalc += "0";    
             }
 
-            expression.textContent += btn.textContent, expCalc += btn.textContent;
+            expression.textContent += input, expCalc += input;
             expVal.textContent = '';    
             break;
 
         default:
 
             // Append numbers
-            if (/^\d$/.test(btn.textContent)){
+            if (/^\d$/.test(input)){
                 
                 if (/[\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
         
-                expression.textContent += btn.textContent, expCalc += btn.textContent;
+                expression.textContent += input, expCalc += input;
                 updateResult();
             }
             
             // Append symbols
-            else if (/[\%\^\*\/\+\-]/.test(btn.getAttribute("data-value"))) {
+            else if (/[\%\^\*\/\+\-]/.test(input)) {
                 if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
 
-                    //account for operator difference in "/", "*", "^"
-                    if (btn.getAttribute("data-value") === "^") expression.textContent += btn.getAttribute("data-value");
-                    else expression.textContent += btn.textContent;
-                    expCalc += btn.getAttribute("data-value");
+                    //account for operator difference in display "/", "*",- + "^"
+                    expression.innerHTML += input === "*" ? "&times;" :
+                                            input === "/" ? "&divide":
+                                            input === "-" ? "&minus;": input
+                                        
+                    expCalc += input;
                     
-                    if (btn.textContent === "%") updateResult();
+                    if (input === "%") updateResult();
                     else expVal.textContent = '';
                 }
             }
     }
 } 
+
 document.addEventListener('DOMContentLoaded', function() {
+        
     let btns = document.querySelectorAll('button');
     btns.forEach(btn => {
         btn.addEventListener('click', function(event) {
-            parseInput(btn);
+            parseInput(this.getAttribute("data-value"));
         });
-    });   
+    });
+    document.addEventListener("keydown", (e) => {
+        cl(e.key)
+    });
+
+    // Add functionality to close history by just clicking outside history
+    document.addEventListener("click",(e) => {
+        // elmt.closest()>returns closest ancesstor among selectors
+        if(e.target.getAttribute("data-value") !== "history" &&
+            !e.target.closest(".history")
+        ) {
+            history.getAttribute("class").includes("visible") ? 
+            history.classList.toggle("visible") : undefined 
+        }
+    });
 });
+
 // keyboard functionality
-// round numbers for diplay
-// equal, heistory close
+
+// fix expression and expval overflow
+// border-radius
