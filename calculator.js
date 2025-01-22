@@ -105,13 +105,19 @@ function updateResult() {
 let pressed = null;
 function parseInput(input) {
     switch(input) {
+
+        case 'c':
+        case 'C':
         case 'clear':
 
             // Clear all
             expression.textContent = expVal.textContent = expCalc = '';
             break;
 
-        case "delete":
+        case 'Delete':
+        case 'Backspace':
+        case 'D':
+        case 'd':
 
             // Delete last character
             expression.textContent = expression.textContent.slice(0, -1);
@@ -119,16 +125,23 @@ function parseInput(input) {
             updateResult();
             break;
 
-        case 'history':
+        case 'H':
+        case 'h':
 
-            // Open history display with expression history
-            history.getAttribute("class").includes("visible") ? undefined : history.classList.toggle("visible");
+            history.classList.toggle("visible");
             break;
 
+        case 'history':
+            // Open history display with expression history
+            history.classList.contains("visible") ? undefined : history.classList.toggle("visible");
+            cl(history)
+            break;
+
+        case 'Escape':
         case 'close':
 
-            // TODO: close history display
-            history.getAttribute("class").includes("visible") ? history.classList.toggle("visible") : undefined;
+            // Close history display
+            history.getAttribute("class").includes("visible") ? history.classList.toggle("visible") : undefined
             break;
 
         case 'square-root':
@@ -139,6 +152,8 @@ function parseInput(input) {
             expression.textContent += '√(', expCalc += '√(', expVal.textContent = '';
             break;
 
+        case 'N':
+        case 'n':
         case 'negative':
             if(expression.textContent.endsWith(".")) break; 
             
@@ -148,22 +163,29 @@ function parseInput(input) {
             expression.innerHTML += '(&minus;', expCalc += '(-', expVal.textContent = '';
             break;
 
+        case 'Enter':
         case '=':
 
             // Stack expression to history, clear expressions
             if(!/^\-?\d+(?:\.\d+)?$/.test(expVal.textContent.toString())) break;
 
-            let previousExp = history.querySelector(".history-values :firstChild");
+            let previousExp = history.querySelector(".history-values > div:first-child");
             let newExp = document.createElement("div");
             
             newExp.innerHTML = `<div>${padWithParenthesis(expression.textContent)}</div>
                                 <div class="stored-eval">=${expVal.textContent}</div>`;
-            referneceNode.parentElement.insertBefore(previousExp, newExp)
+            
+            // Prepend before exisiting or just insert if no history
+            previousExp ?
+            previousExp.parentElement.insertBefore(newExp, previousExp) :
+            history.lastElementChild.appendChild(newExp)
 
             expression.textContent = expCalc = expVal.textContent;
             expVal.textContent = "";
             break;
 
+        case '(':
+        case ')':
         case '()':
 
             // Open if empty, operator/"("" precedes it, or equal numbers of open and close parenthesis
@@ -236,22 +258,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     document.addEventListener("keydown", (e) => {
-        cl(e.key)
+        parseInput(e.key)
     });
-
     // Add functionality to close history by just clicking outside history
     document.addEventListener("click",(e) => {
         // elmt.closest()>returns closest ancesstor among selectors
         if(e.target.getAttribute("data-value") !== "history" &&
             !e.target.closest(".history")
         ) {
-            history.getAttribute("class").includes("visible") ? 
+            history.classList.contains("visible") ? 
             history.classList.toggle("visible") : undefined 
         }
     });
 });
 
 // keyboard functionality
+//fix button focusing on keydown
+
+// read instruction on top
 
 // fix expression and expval overflow
 // border-radius
+
+// clean cl(), refactor
