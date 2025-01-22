@@ -5,7 +5,6 @@ const expression = document.querySelector('.expression');
 const expVal = document.querySelector('.eval');
 let expCalc = expression.textContent;
 
-const cl = console.log;
 function appendMultiply() {
     expression.textContent += "×";      
     expCalc += "*";
@@ -25,7 +24,15 @@ function operate (a,b, operator) {
         case '/':
             return a / b;
         case '^':
-            return Math.pow(a, b)
+            
+            // If positive base or exponent isn't a fraction
+            if (a >= 0 || Math.abs(b) >= 1 || b == 0) return Math.pow(a, b)
+            
+            // IF odd root
+            if ((1 / b) % 2 !== 0) return -Math.pow(Math.abs(a), b)
+            
+            return null
+            
         case '√':
             return Math.sqrt(a);
         case '%':
@@ -38,23 +45,22 @@ function equals(exp) {
     
     let expNew = exp;
     // Eval percentages
-    while(exp.includes('%')) {
-        expNew = exp.replace(/(?<!\d)(\-?\d+(?:\.\d+)?)(%)/, ($0, $1, $2) => operate(+$1, null, $2) ?? $0);
+    while(expNew = exp.replace(/(?<!\d)(\-?\d+(?:\.\d+)?)(%)/, ($0, $1, $2) => operate(+$1, null, $2) ?? $0)) {
         if (expNew === exp) return NaN;
         else exp = expNew;
     }
     // Eval roots
-    while(exp.includes('√')) {
-        expNew = exp.replace(/(√)(-?\d+(?:\.\d+)?)/, ($0, $1, $2) => operate(+$2, null, $1) ?? $0);
+    while(exp.inew = exp.replace(/(√)(-?\d+(?:\.\d+)?)/, ($0, $1, $2) => operate(+$2, null, $1) ?? $0)) {
         if (expNew === exp) return NaN;
         else exp = expNew;
     }
     
-    // Eval exponentials, multiplications, divisions, sums and substractions(comes before sum to account for ltr)
+    // Eval exponentials, multiplications & divisions, sums & substractions(ltr)
     let regExp = null;
     for (let operator of ['\\^', '\\*\\/', '\\-\\+']) {
-        regExp = new RegExp(`(?<!\\d)(-?\\d+(?:\\.\\d+)?)([${operator}])(-?\\d+(?:\\.\\d+)?)`);
+
         // While there are still operators to evaluate, make sure "-" is not a negative sign
+        regExp = new RegExp(`(?<!\\d)(-?\\d+(?:\\.\\d+)?)([${operator}])(-?\\d+(?:\\.\\d+)?)`);
         while(regExp.test(exp)) {
             
             expNew = exp.replace(regExp, ($0, $1, $2, $3) => operate(+$1, +$3, $2) ?? $0);
@@ -69,12 +75,10 @@ function equals(exp) {
 function evaluate(exp) {
     
     // If empty, NaN (NaN doesn't equal itself) or number
-    if (!exp ||exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) {cl(11111111)
-        return exp;}
+    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) return exp;
     
     // Do root, exponential, multiplication, division, percentage, addition, subtraction
-    if (!/[()]/g.test(exp)) {cl(222222222)
-    return equals(exp);}
+    if (!/[()]/g.test(exp)) return equals(exp);
 
     // Loop over all internal parenthesis replace them with their evaluated value
     for (let ex of exp.matchAll(/\(([^\(\)]*)\)/g)) {
@@ -143,7 +147,15 @@ function parseInput(btn) {
 
             // Todo: append expression to history, clear expressions, add a way to restore dispaly to original
             // Todo: display history
-            if(expression.textContent.endsWith(".")) break;
+
+            // If value not a number return
+            if(!/^\-?\d+(?:\.\d+)?$/g.test(expVal)) break;
+            historyDisplay.innerHTML += `<div>
+                                            <div>${expression.textContent}</div>
+                                            <div class="stored-eval">=${expVal.textContent}</div>
+                                        </div>`;
+            expression.textContent = expVal;
+            expCalc.textContent = expVal.textContent = ""; 
             break;
 
         case '()':
@@ -214,6 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });   
 });
-//run 2×(0.5)−2>> problem in equals function(-)
 // keyboard functionality
-// round diplay
+// round numbers for diplay
+// equal, heistory close
