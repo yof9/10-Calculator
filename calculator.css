@@ -5,7 +5,6 @@
     padding: 0;
 }
 html, body {
-    font-size: 10px;
     width: 100vw;
     height: 100vh;
 }
@@ -15,24 +14,62 @@ body {
     align-items: center;
 }
 .container {
-    padding: 1rem;
-    background-color: rgb(0, 0, 0);
-    min-width: 20rem;
-    width: min(70%, 30rem);
+    position: relative;
+    min-width: 20em;
+    width: min(70%, 25em);
     min-width: 310px;
-    max-height: clamp(350px, 80%, 40rem);
+    max-height: clamp(350px, 80%, 30em);
 }
 .history {
-    display: flex;
+    position:absolute;
+    left: 0;
+    top: 0;
     visibility: hidden;
-    flex-direction: column-reverse;
-    overflow-y: auto;
-    height: 70%;
-    width: 70%;
+    padding: .25em;
+    background-color: rgb(0, 0, 0);
+    color: rgb(255, 255, 255);
+    height: 90%;
+    width: 90%;
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1em;
+        span {
+            font-size: 1.3em;
+            font-weight: 800;
+        }
+        button {
+            background-color: rgb(255, 0, 0);
+            color: rgb(255, 255, 255);
+            border-radius: 30%;
+            padding: .3em;
+            border: none;
+        }
+    }
+    .history-values {
+        font-size: 1.5em;
+        overflow-y: auto;
+        height: 100%;
+        width: 100%;
+        max-height: 320px;
+        padding: .25em;
+        text-align: right;
+        word-wrap: break-word;
+        .stored-eval {
+            color: rgb(8, 211, 8);
+            font-size: 1em;
+        }
+    }
+
 }
+.history.visible {
+    visibility: visible;
+}
+
 .wrapper:nth-child(2) {
     height: 6em;
-    background-image: linear-gradient(180deg, rgb(231, 229, 71) 30%, rgb(231, 228, 209));
+    background-image: linear-gradient(180deg, rgb(158, 145, 145) 30%, rgb(231, 228, 209));
     text-align: right;
     .expression {
         height: 50%;
@@ -44,7 +81,7 @@ body {
     }
 }
 .wrapper:nth-child(2), .row {
-    padding: .5rem 1rem;
+    padding: .5em 1em;
 }
 .row{
     background-color: rgb(128, 128, 128);
@@ -76,7 +113,6 @@ body {
     scale: 120%;
     background-color: rgb(4, 129, 167);
 }
-.store-eval {
-    color: rgb(8, 211, 8);
-    font-size: 1.3em;
+button {
+    cursor: pointer;
 }
