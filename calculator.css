@@ -76,3 +76,7 @@ body {
     scale: 120%;
     background-color: rgb(4, 129, 167);
 }
+.store-eval {
+    color: rgb(8, 211, 8);
+    font-size: 1.3em;
+}
