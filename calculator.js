@@ -132,22 +132,23 @@ function parseInput(input) {
             break;
 
         case 'history':
+
             // Open history display with expression history
-            history.classList.contains("visible") ? undefined : history.classList.toggle("visible");
-            cl(history)
+            history.classList.contains("visible") ? undefined : history.classList.add("visible");
+           
             break;
 
         case 'Escape':
         case 'close':
 
             // Close history display
-            history.getAttribute("class").includes("visible") ? history.classList.toggle("visible") : undefined
+            history.classList.contains("visible") ? history.classList.remove("visible") : undefined
             break;
 
         case 'square-root':
 
-            // add square root symbols
-            if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+            // Add square root symbols
+            if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
 
             expression.textContent += '√(', expCalc += '√(', expVal.textContent = '';
             break;
@@ -155,10 +156,11 @@ function parseInput(input) {
         case 'N':
         case 'n':
         case 'negative':
-            if(expression.textContent.endsWith(".")) break; 
+
+            if(expCalc.endsWith(".")) break; 
             
             // add negative symbols
-            if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+            if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
 
             expression.innerHTML += '(&minus;', expCalc += '(-', expVal.textContent = '';
             break;
@@ -166,20 +168,21 @@ function parseInput(input) {
         case 'Enter':
         case '=':
 
-            // Stack expression to history, clear expressions
+            // If evaluated not a valid number, do nothing 
             if(!/^\-?\d+(?:\.\d+)?$/.test(expVal.textContent.toString())) break;
 
+            // Stack expression to history 
             let previousExp = history.querySelector(".history-values > div:first-child");
             let newExp = document.createElement("div");
             
             newExp.innerHTML = `<div>${padWithParenthesis(expression.textContent)}</div>
                                 <div class="stored-eval">=${expVal.textContent}</div>`;
             
-            // Prepend before exisiting or just insert if no history
             previousExp ?
             previousExp.parentElement.insertBefore(newExp, previousExp) :
             history.lastElementChild.appendChild(newExp)
-
+            
+            // Clear/Update expressions
             expression.textContent = expCalc = expVal.textContent;
             expVal.textContent = "";
             break;
@@ -187,32 +190,41 @@ function parseInput(input) {
         case '(':
         case ')':
         case '()':
-
+            
             // Open if empty, operator/"("" precedes it, or equal numbers of open and close parenthesis
             if (
-                !expression.textContent ||
-                /[\(\^\*\÷\+\-\√\.]/.test(expression.textContent.at(-1)) || 
-                expression.textContent.split("(").length === 
-                expression.textContent.split(")").length
+                (!expCalc ||
+                /[\(\^\*\/\+\-\√\.]$/.test(expCalc) || 
+                expCalc.split("(").length === 
+                expCalc.split(")").length)
             ) {
 
-                // If last inputted value is a number or close parenthesis, then append "*(" to expression
-                if (/[\d\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+                // User tried to enter illegal close parenthesis, do nothing
+                if(input === ')') break;
+
+                // If last inputted value is a number/"%"/")" append "*(" to expression
+                if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
                 expression.textContent += "(", expCalc += "(", expVal.textContent = '';
             }
             else {
+                
+                // User tried to enter illegal open parenthesis, do nothing
+                if(input === '(') break;
+
                 expression.textContent += ")", expCalc += ")";
                 updateResult();   
             }
             break;
         
         case ".": 
-            if(expression.textContent.endsWith(".")) break;
             
-            if (/[\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+            // End can't be a number with "."
+            if(/\d+\.\d*$/.test(expCalc)) break;
+            
+            if (/[\)\%]$/.test(expCalc)) appendMultiply();
             
             // If last inputted value is not a number, then append "0" before "."
-            if (!expression.textContent || /\D/.test(expression.textContent.at(-1))) {
+            if (!expCalc || /\D$/.test(expCalc)) {
                 expression.textContent += "0", expCalc += "0";    
             }
 
@@ -225,7 +237,7 @@ function parseInput(input) {
             // Append numbers
             if (/^\d$/.test(input)){
                 
-                if (/[\)\%]/.test(expression.textContent.at(-1))) appendMultiply();
+                if (/[\)\%]$/.test(expCalc)) appendMultiply();
         
                 expression.textContent += input, expCalc += input;
                 updateResult();
@@ -233,9 +245,11 @@ function parseInput(input) {
             
             // Append symbols
             else if (/[\%\^\*\/\+\-]/.test(input)) {
-                if (/[\d\)\%]/.test(expression.textContent.at(-1))) {
 
-                    //account for operator difference in display "/", "*",- + "^"
+                // If Valid end
+                if (/[\d\)\%]$/.test(expCalc)) {
+
+                    //account for operator difference in display "/", "*","-"
                     expression.innerHTML += input === "*" ? "&times;" :
                                             input === "/" ? "&divide":
                                             input === "-" ? "&minus;": input
@@ -253,14 +267,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
     let btns = document.querySelectorAll('button');
     btns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            cl(e)
+        btn.addEventListener('click', function() {
             parseInput(this.getAttribute("data-value"));
         });
     });
     document.addEventListener("keydown", (e) => {
         e.preventDefault()
-        cl(e.key)
         parseInput(e.key)
     });
     // Add functionality to close history by just clicking outside history
@@ -270,12 +282,11 @@ document.addEventListener('DOMContentLoaded', function() {
             !e.target.closest(".history")
         ) {
             history.classList.contains("visible") ? 
-            history.classList.toggle("visible") : undefined 
+            history.classList.remove("visible") : undefined 
         }
     });
 });
 
-//fix button focusing on keydown
 // fix user () keyboard insert>>deny if illegal else insert desired, not current behaviour
 
 // read instruction on top
