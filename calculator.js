@@ -253,11 +253,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
     let btns = document.querySelectorAll('button');
     btns.forEach(btn => {
-        btn.addEventListener('click', function(event) {
+        btn.addEventListener('click', function(e) {
+            cl(e)
             parseInput(this.getAttribute("data-value"));
         });
     });
     document.addEventListener("keydown", (e) => {
+        e.preventDefault()
+        cl(e.key)
         parseInput(e.key)
     });
     // Add functionality to close history by just clicking outside history
@@ -272,8 +275,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// keyboard functionality
 //fix button focusing on keydown
+// fix user () keyboard insert>>deny if illegal else insert desired, not current behaviour
 
 // read instruction on top
 
