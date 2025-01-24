@@ -271,13 +271,20 @@ function parseInput(input) {
             else if (/[\%\^\*\/\+\-]/.test(input)) {
 
                 // If Valid end
-                if (/[\d\)\%]$/.test(expCalc)) {
+                if (/[\d\)\%\^\*\/\+]$|(?<!\()\-$/g.test(expCalc)) {
 
-                    //account for operator difference in display "/", "*","-"
+                    // If end is operator to be replaced by new, trim
+                    if (/[\^\*\/\+]$|(?<!\()\-$/g.test(expCalc)) {
+
+                        expression.textContent = expression.textContent.slice(0, -1);
+                        expCalc = expCalc.slice(0, -1);
+                    }
+
+                    //account for operator difference in display "/", "*","-"    
                     expression.innerHTML += input === "*" ? "&times;" :
                                             input === "/" ? "&divide":
-                                            input === "-" ? "&minus;": input
-                                        
+                                            input === "-" ? "&minus;": input;
+                        
                     expCalc += input;
                     
                     if (input === "%") updateResult();
