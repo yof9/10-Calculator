@@ -1,16 +1,19 @@
 "use strict";
 
-const history = document.querySelector('.history');
 const expression = document.querySelector('.expression');
-const expVal = document.querySelector('.eval');
 let expCalc = expression.textContent;
+const expVal = document.querySelector('.eval');
+const history = document.querySelector('.history');
 const cl = console.log;
 function appendMultiply() {
+
     expression.textContent += "×";      
     expCalc += "*";
+
 }
 
 function operate (a,b, operator) {
+  
     if (isNaN(a) || isNaN(b)) {
         return null;
     }
@@ -72,19 +75,28 @@ function equals(exp) {
 
     return exp;
 }
+function isDivionByZero(exp){
+    let errorMatch = exp.match(/(?:\/\-?)(0\d*(\.\d+)?)/);
+    return errorMatch && +errorMatch[1] === 0 ? true : false;
+}
 
 function evaluate(exp) {
     
+    // If Error, empty, NaN (NaN doesn't equal itself) or number
+    if (exp.includes("error")) return "error"; 
+
     // If empty, NaN (NaN doesn't equal itself) or number
     if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) return exp;
     
     // Do root, exponential, multiplication, division, percentage, addition, subtraction
-    if (!/[()]/g.test(exp)) return equals(exp);
+    if (!/[()]/g.test(exp)) {
+        return isDivionByZero(exp) ? "error" : equals(exp);
+    }
 
     // Loop over all internal parenthesis replace them with their evaluated value
     for (let ex of exp.matchAll(/\(([^\(\)]*)\)/g)) {
         exp = exp.replace(ex[0], evaluate(ex[1]));
-    }
+     }
 
     // Call evaluate again to evaluate the new expression
     return evaluate(exp)
@@ -100,10 +112,12 @@ function updateResult() {
 
     // Pad then evaluate
     let evaluated = evaluate(padWithParenthesis(expCalc));
-    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? Math.round(evaluated*1e10)/1e10  : '';
+    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? Math.round(evaluated*1e10)/1e10  : 
+    evaluated === "error" ?  "Zero Division Error" : '';
 }
 let pressed = null;
 function parseInput(input) {
+
     switch(input) {
 
         case 'c':
@@ -239,8 +253,18 @@ function parseInput(input) {
                 
                 if (/[\)\%]$/.test(expCalc)) appendMultiply();
         
-                expression.textContent += input, expCalc += input;
-                updateResult();
+                
+                // If not empty and contains arthmetic operation, update
+                if(expCalc && /[\%\^\*\/\+\-\√]/.test(expCalc)) {
+                    expression.textContent += input, expCalc += input;    
+                    updateResult();
+                }
+                // Else just append number< for efficency
+                else {
+                    expression.textContent += input
+                    expCalc += input;
+                    expVal.textContent += input;
+                }
             }
             
             // Append symbols
@@ -287,11 +311,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// fix user () keyboard insert>>deny if illegal else insert desired, not current behaviour
-
 // read instruction on top
 
-// fix expression and expval overflow
+// fix expression overflow && expEval(???)
+
 // border-radius
 
 // clean cl(), refactor
