@@ -273,7 +273,7 @@ function parseInput(input) {
                 // If Valid end
                 if (/[\d\)\%\^\*\/\+]$|(?<!\()\-$/g.test(expCalc)) {
 
-                    // If end is operator to be replaced by new, trim
+                    // If end is operator to be replaced, trim.(can replace any by "%" but it can't be replaced)
                     if (/[\^\*\/\+]$|(?<!\()\-$/g.test(expCalc)) {
 
                         expression.textContent = expression.textContent.slice(0, -1);
@@ -318,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// read instruction on top
 
 // fix expression overflow && expEval(???)
 

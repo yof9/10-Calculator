@@ -1,5 +1,5 @@
 * {
-    /* outline: red 1px solid; */
+    outline: red 1px solid;
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -15,10 +15,10 @@ body {
 }
 .container {
     position: relative;
-    min-width: 20em;
     width: min(70%, 25em);
     min-width: 310px;
-    max-height: clamp(350px, 80%, 30em);
+    height: clamp(350px, 80%, 30em);
+    min-height: 350px;
 }
 .history {
     position:absolute;
