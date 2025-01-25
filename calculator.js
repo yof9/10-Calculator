@@ -212,6 +212,7 @@ function parseInput(input) {
         case 'H':
         case 'h':
 
+            // Toggle history (shortcut)
             history.classList.toggle("visible");
             break;
 
@@ -234,7 +235,10 @@ function parseInput(input) {
             // Add square root symbols
             if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
 
-            expression.textContent += '√(', expCalc += '√(', expVal.textContent = '';
+            expression.textContent += '√(', expCalc += '√(';
+
+            // Update to check for errors
+            updateResult()
             break;
 
         case 'N':
@@ -247,6 +251,9 @@ function parseInput(input) {
             if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
 
             expression.innerHTML += '(&minus;', expCalc += '(-', expVal.textContent = '';
+            
+            // Update to check for errors
+            updateResult();
             break;
 
         case 'Enter':
@@ -288,16 +295,18 @@ function parseInput(input) {
 
                 // If last inputted value is a number/"%"/")" append "*(" to expression
                 if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
-                expression.textContent += "(", expCalc += "(", expVal.textContent = '';
+                expression.textContent += "(", expCalc += "(";
             }
             else {
                 
                 // User tried to enter illegal open parenthesis, do nothing
                 if(input === '(') break;
 
-                expression.textContent += ")", expCalc += ")";
-                updateResult();   
+                expression.textContent += ")", expCalc += ")";   
             }
+
+            // Update to check for errors
+            updateResult();
             break;
         
         case ".": 
@@ -313,7 +322,7 @@ function parseInput(input) {
             }
 
             expression.textContent += input, expCalc += input;
-            expVal.textContent = '';    
+            updateResult();    
             break;
 
         default:
@@ -352,8 +361,8 @@ function parseInput(input) {
                         
                     expCalc += input;
                     
-                    if (input === "%") updateResult();
-                    else expVal.textContent = '';
+                    //UpdateResult to check error values in expression
+                    updateResult();
                 }
             }
     }
