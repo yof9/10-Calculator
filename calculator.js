@@ -33,6 +33,7 @@ function operate (a,b, operator) {
             
             // IF odd root
             if ((1 / b) % 2 !== 0) return -Math.pow(Math.abs(a), b)
+                //-ve base and exponent is a fraction
             
             return null
             
@@ -75,27 +76,76 @@ function equals(exp) {
 
     return exp;
 }
-function isDivionByZero(exp){
-    let errorMatch = exp.match(/(?:\/\-?)(0\d*(\.\d+)?)/);
-    return errorMatch && +errorMatch[1] === 0 ? true : false;
+function isError(exp){
+    
+    let errorMatch = null;
+
+    // Dividing by zero
+    errorMatch = exp.matchAll(/(?:\/\-?)(\d+\.\d+|\d+(?!\.))/g);
+    for (let ex of errorMatch) {
+        if (+ex.at(1) === 0) { 
+            return {"error": "Zero Division Error!!"};
+        }
+    }
+
+    // Square root of -ve
+    errorMatch = exp.matchAll(/(?:\√\-)(\d+\.\d+|\d+(?!\.))/g);
+    for (let ex of errorMatch) {
+        if (+ex.at(1) !== 0) {
+            return {"error": "Negative Numbers Don't Have Square Root!!"};
+        }
+    }
+
+    //-ve base and exponent is a fraction evaluating to odd root
+    errorMatch = exp.matchAll(/(?:\-\d+(?:\.\d+)?\^\-?)(\d+\.\d+|\d+(?!\.))/g);
+    for (let ex of errorMatch) {
+        if (+ex.at(1) > 0 && +ex.at(1) < 1 && (1 / +ex.at(1)) % 2 === 0) {
+            return {"error": "Negative Numbers Don't Have even Root!!"};
+        }
+    }
+}
+
+function validateDigit(num) {
+    let errorMatch = null;
+
+    // More than 10 digits after decimal point
+    errorMatch = num.match(/\.\d{11,}/);
+    if (errorMatch) {
+        return {"error": "Only 10 Digits allowed after Decimal Point!!"};
+    }
+
+    // More than 15 digits in total
+    errorMatch = num.matchAll(/(\d+)(?:\.)?(\d*)/g);
+    for (let ex of errorMatch) {
+        if (ex.at(1).concat(ex.at(2)).length > 15) { 
+            return {"error": "Total number of Digits can't exceed 15!!"};
+        }
+    }
 }
 
 function evaluate(exp) {
-    
-    // If Error, empty, NaN (NaN doesn't equal itself) or number
-    if (exp.includes("error")) return "error"; 
+
+    let errorChecked = null; 
 
     // If empty, NaN (NaN doesn't equal itself) or number
-    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) return exp;
+    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) {
+        errorChecked = isError(exp)
+        return errorChecked?.error ? errorChecked : exp;
+    }
     
     // Do root, exponential, multiplication, division, percentage, addition, subtraction
     if (!/[()]/g.test(exp)) {
-        return isDivionByZero(exp) ? "error" : equals(exp);
+        errorChecked = isError(exp)
+        return errorChecked?.error ? errorChecked : equals(exp);
     }
-
+    
     // Loop over all internal parenthesis replace them with their evaluated value
     for (let ex of exp.matchAll(/\(([^\(\)]*)\)/g)) {
-        exp = exp.replace(ex[0], evaluate(ex[1]));
+        errorChecked = evaluate(ex[1])
+
+        // If value returned for error before replacing
+        if (errorChecked?.error) return errorChecked
+        exp = exp.replace(ex[0], errorChecked);
      }
 
     // Call evaluate again to evaluate the new expression
@@ -108,16 +158,36 @@ function padWithParenthesis(exp) {
     return exp.padEnd(expCalc.length + parenthesisMissing, ')');
 }
 
+function displayError(error) {
+
+    // Set error styling
+    !expVal.classList.contains("error") ? expVal.classList.add("error") : undefined;
+        
+    // Assign error value
+    expVal.textContent = error;
+
+}
+function displayValue(value) {
+    // Set valid styling
+    expVal.classList.contains("error") ? expVal.classList.remove("error") : undefined;
+    
+    // Assign value
+    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(value) ? 
+                        Math.round(value*1e10)/1e10  : '';
+}
+
 function updateResult() {
 
     // Pad then evaluate
     let evaluated = evaluate(padWithParenthesis(expCalc));
-    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(evaluated) ? Math.round(evaluated*1e10)/1e10  : 
-    evaluated === "error" ?  "Zero Division Error" : '';
+    
+    evaluated?.error ? displayError(evaluated.error) : displayValue(evaluated);
+    
 }
+
 let pressed = null;
 function parseInput(input) {
-
+    
     switch(input) {
 
         case 'c':
@@ -252,19 +322,14 @@ function parseInput(input) {
             if (/^\d$/.test(input)){
                 
                 if (/[\)\%]$/.test(expCalc)) appendMultiply();
-        
-                
-                // If not empty and contains arthmetic operation, update
-                if(expCalc && /[\%\^\*\/\+\-\√]/.test(expCalc)) {
-                    expression.textContent += input, expCalc += input;    
-                    updateResult();
-                }
-                // Else just append number< for efficency
-                else {
-                    expression.textContent += input
-                    expCalc += input;
-                    expVal.textContent += input;
-                }
+
+                //Check validity
+                let digitValidation = validateDigit(expCalc+input);
+                if(digitValidation?.error) displayError(digitValidation.error);
+                else expression.textContent += input, expCalc += input, updateResult();
+                        
+                    
+
             }
             
             // Append symbols
@@ -306,9 +371,11 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault()
         parseInput(e.key)
     });
+
     // Add functionality to close history by just clicking outside history
     document.addEventListener("click",(e) => {
-        // elmt.closest()>returns closest ancesstor among selectors
+
+        // elmt.closest()>returns closest ancester among selectors
         if(e.target.getAttribute("data-value") !== "history" &&
             !e.target.closest(".history")
         ) {
@@ -318,6 +385,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// error if +ve/-ve infinity, also, don't do unnecessary calc use update to return, check with devtools 
+// //check if pressed is used
 
 // fix expression overflow && expEval(???)
 
