@@ -4,6 +4,7 @@ const expression = document.querySelector('.expression');
 let expCalc = expression.textContent;
 const expVal = document.querySelector('.eval');
 const history = document.querySelector('.history');
+
 const cl = console.log;
 function appendMultiply() {
 
@@ -31,11 +32,11 @@ function operate (a,b, operator) {
             // If positive base or exponent isn't a fraction
             if (a >= 0 || Math.abs(b) >= 1 || b == 0) return Math.pow(a, b)
             
-            // IF odd root
+            // IF -ve base and exponent is a fraction (odd root)
             if ((1 / b) % 2 !== 0) return -Math.pow(Math.abs(a), b)
-                //-ve base and exponent is a fraction
-            
-            return null
+                
+            // if -ve base and exponent is a fraction (even root:handled by isError(), just precaution)
+            return null 
             
         case '√':
             return Math.sqrt(a);
@@ -50,22 +51,21 @@ function equals(exp) {
     let expNew = exp;
     // Eval percentages
     while(exp.includes("%")) {
-        expNew = exp.replace(/(?<!\d)(\-?\d+(?:\.\d+)?)(%)/, ($0, $1, $2) => operate(+$1, null, $2) ?? $0);
+        expNew = exp.replace(/(?<!\d)(\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?)(%)/, ($0, $1, $2) => operate(+$1, null, $2) ?? $0);
         if (expNew === exp) return NaN;
         else exp = expNew;
     }
     // Eval roots
     while(exp.includes("√")) {
-        expNew = exp.replace(/(√)(-?\d+(?:\.\d+)?)/, ($0, $1, $2) => operate(+$2, null, $1) ?? $0);
+        expNew = exp.replace(/(√)(-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?)/, ($0, $1, $2) => operate(+$2, null, $1) ?? $0);
         if (expNew === exp) return NaN;
         else exp = expNew;
     }
     // Eval exponentials, multiplications & divisions, sums & substractions(ltr)
     let regExp = null;
     for (let operator of ['\\^', '\\*\\/', '\\-\\+']) {
-
         // While there are still operators to evaluate, make sure "-" is not a negative sign
-        regExp = new RegExp(`(?<!\\d)(-?\\d+(?:\\.\\d+)?)([${operator}])(-?\\d+(?:\\.\\d+)?)`);
+        regExp = new RegExp(`(?<!\\d)(-?\\d+(?:\\.\\d+)?(?:e[\\+\\-]\\d+)?)([${operator}])(-?\\d+(?:\\.\\d+)?(?:e[\\+\\-]\\d+)?)`)
         while(regExp.test(exp)) {
             
             expNew = exp.replace(regExp, ($0, $1, $2, $3) => operate(+$1, +$3, $2) ?? $0);
@@ -81,7 +81,7 @@ function isError(exp){
     let errorMatch = null;
 
     // Dividing by zero
-    errorMatch = exp.matchAll(/(?:\/\-?)(\d+\.\d+|\d+(?!\.))/g);
+    errorMatch = exp.matchAll(/(?:\/\-?)((?:\d+\.\d+|\d+(?!\.))(?:e[\+\-]\d+)?)/g);
     for (let ex of errorMatch) {
         if (+ex.at(1) === 0) { 
             return {"error": "Zero Division Error!!"};
@@ -89,7 +89,7 @@ function isError(exp){
     }
 
     // Square root of -ve
-    errorMatch = exp.matchAll(/(?:\√\-)(\d+\.\d+|\d+(?!\.))/g);
+    errorMatch = exp.matchAll(/(?:\√\-)((?:\d+\.\d+|\d+(?!\.))(?:e[\+\-]\d+)?)/g);
     for (let ex of errorMatch) {
         if (+ex.at(1) !== 0) {
             return {"error": "Negative Numbers Don't Have Square Root!!"};
@@ -97,7 +97,7 @@ function isError(exp){
     }
 
     //-ve base and exponent is a fraction evaluating to odd root
-    errorMatch = exp.matchAll(/(?:\-\d+(?:\.\d+)?\^\-?)(\d+\.\d+|\d+(?!\.))/g);
+    errorMatch = exp.matchAll(/(?:\-\d+(?:\.\d+)?(?:e[\+\-]\d+)?\^\-?)((?:\d+\.\d+|\d+(?!\.))(?:e[\+\-]\d+)?)/g);
     for (let ex of errorMatch) {
         if (+ex.at(1) > 0 && +ex.at(1) < 1 && (1 / +ex.at(1)) % 2 === 0) {
             return {"error": "Negative Numbers Don't Have even Root!!"};
@@ -109,16 +109,18 @@ function validateDigit(num) {
     let errorMatch = null;
 
     // More than 10 digits after decimal point
-    errorMatch = num.match(/\.\d{11,}/);
+    errorMatch = num.match(/\.\d{18,}|\.\d{17,}(?=e[\+\-]\d+)/);
     if (errorMatch) {
-        return {"error": "Only 10 Digits allowed after Decimal Point!!"};
+        return {"error": "Only 17 Digits allowed after Decimal Point!!"};
     }
 
     // More than 15 digits in total
-    errorMatch = num.matchAll(/(\d+)(?:\.)?(\d*)/g);
+    errorMatch = num.matchAll(/(\d+)(?:\.)?(\d*)(e[\+\-]\d+)?/g);
     for (let ex of errorMatch) {
-        if (ex.at(1).concat(ex.at(2)).length > 15) { 
-            return {"error": "Total number of Digits can't exceed 15!!"};
+        if ((ex.at(1).concat(ex.at(2)).length > 22 && !ex.at(3)) || 
+            (ex.at(1).concat(ex.at(2)).length > 21 && ex.at(3))
+        ) { 
+            return {"error": "Total number of Digits can't exceed 22!!"};
         }
     }
 }
@@ -128,7 +130,7 @@ function evaluate(exp) {
     let errorChecked = null; 
 
     // If empty, NaN (NaN doesn't equal itself) or number
-    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?$/.test(exp)) {
+    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?$/.test(exp)) {
         errorChecked = isError(exp)
         return errorChecked?.error ? errorChecked : exp;
     }
@@ -158,34 +160,51 @@ function padWithParenthesis(exp) {
     return exp.padEnd(expCalc.length + parenthesisMissing, ')');
 }
 
-function displayError(error) {
+function displayError(error, errorClass) {
 
-    // Set error styling
-    !expVal.classList.contains("error") ? expVal.classList.add("error") : undefined;
-        
     // Assign error value
     expVal.textContent = error;
 
+    // Set error styling
+    errorClass = errorClass || "error";
+
+    !expVal.classList.contains(errorClass) ? 
+    expVal.classList.add(errorClass) : undefined;
+        
+
 }
 function displayValue(value) {
+    cl("vv",value, typeof value)
+
+    // Assign value valid number
+    if (/^\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?$/.test(value)) {
+
+        let parts = value.trimStart("-").replace(/e[\+\-]\d+$/, "1").split(".") 
+        
+        value = parts.join("")?.length > 22 || parts.at(1)?.length > 17 ?
+        (+value).toExponential(16) : value;
+
+        expVal.innerHTML = value.replaceAll("-", "&minus;")
+    }
+    else {
+        // operator/"("...
+        expVal.textContent = ""
+    }
     // Set valid styling
-    expVal.classList.contains("error") ? expVal.classList.remove("error") : undefined;
+    expVal.classList.remove("error", "digitError");
     
-    // Assign value
-    expVal.textContent = /^\-?\d+(?:\.\d+)?$/.test(value) ? 
-                        Math.round(value*1e10)/1e10  : '';
 }
 
 function updateResult() {
 
     // Pad then evaluate
     let evaluated = evaluate(padWithParenthesis(expCalc));
+    cl(evaluated)
     
     evaluated?.error ? displayError(evaluated.error) : displayValue(evaluated);
     
 }
 
-let pressed = null;
 function parseInput(input) {
     
     switch(input) {
@@ -196,6 +215,10 @@ function parseInput(input) {
 
             // Clear all
             expression.textContent = expVal.textContent = expCalc = '';
+
+            //remove error styling
+            expVal.classList.remove("error", "digitError");
+            
             break;
 
         case 'Delete':
@@ -212,7 +235,6 @@ function parseInput(input) {
         case 'H':
         case 'h':
 
-            // Toggle history (shortcut)
             history.classList.toggle("visible");
             break;
 
@@ -232,35 +254,41 @@ function parseInput(input) {
 
         case 'square-root':
 
+            // User tried to enter illegal square-root
+            if(/(\.|e[\+\-]?)$/.test(expCalc)) break; 
+
             // Add square root symbols
             if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
 
             expression.textContent += '√(', expCalc += '√(';
+            if (!expVal.classList.contains("error"))expVal.textContent = '';
 
-            // Update to check for errors
-            updateResult()
             break;
 
         case 'N':
         case 'n':
         case 'negative':
 
-            if(expCalc.endsWith(".")) break; 
+            // User tried to enter illegal negation
+            if(/(\.|e[\+\-]?)$/.test(expCalc)) break;
             
             // add negative symbols
             if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
 
-            expression.innerHTML += '(&minus;', expCalc += '(-', expVal.textContent = '';
-            
-            // Update to check for errors
-            updateResult();
+            expression.innerHTML += '(&minus;', expCalc += '(-';
+            if (!expVal.classList.contains("error"))expVal.textContent = '';
+
             break;
 
         case 'Enter':
         case '=':
 
-            // If evaluated not a valid number, do nothing 
-            if(!/^\-?\d+(?:\.\d+)?$/.test(expVal.textContent.toString())) break;
+            // If digit error update expval
+            if(expVal.classList.contains("digitError")) updateResult();
+           
+            // If evaluated not a valid number, do nothing
+            let formattedExpVal = expVal.textContent.replaceAll("−", "-"); 
+            if(!/^\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?$/.test(formattedExpVal)) break;
 
             // Stack expression to history 
             let previousExp = history.querySelector(".history-values > div:first-child");
@@ -274,46 +302,57 @@ function parseInput(input) {
             history.lastElementChild.appendChild(newExp)
             
             // Clear/Update expressions
-            expression.textContent = expCalc = expVal.textContent;
+            expression.textContent = expVal.textContent;
+            expCalc = formattedExpVal;
             expVal.textContent = "";
             break;
 
         case '(':
         case ')':
         case '()':
+
+            // User tried to enter illegal close parenthesis, do nothing
+            if(input === ')' || /(\.|e[\+\-]?)$/.test(expCalc)) break;
             
             // Open if empty, operator/"("" precedes it, or equal numbers of open and close parenthesis
             if (
                 (!expCalc ||
-                /[\(\^\*\/\+\-\√\.]$/.test(expCalc) || 
+                /[\(\^\*\/\+\-\√]$/.test(expCalc) ||
                 expCalc.split("(").length === 
                 expCalc.split(")").length)
             ) {
 
-                // User tried to enter illegal close parenthesis, do nothing
-                if(input === ')') break;
-
                 // If last inputted value is a number/"%"/")" append "*(" to expression
                 if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
                 expression.textContent += "(", expCalc += "(";
+
+                // Replace digitError with error, by updatingresult
+                if(expVal.classList.contains("error", "digitError")) updateResult();
+
+                else if (!expVal.classList.contains("error"))expVal.textContent = '';
             }
             else {
                 
                 // User tried to enter illegal open parenthesis, do nothing
                 if(input === '(') break;
 
-                expression.textContent += ")", expCalc += ")";   
+                expression.textContent += ")", expCalc += ")";
+                updateResult();   
             }
 
-            // Update to check for errors
-            updateResult();
             break;
         
         case ".": 
             
-            // End can't be a number with "."
-            if(/\d+\.\d*$/.test(expCalc)) break;
-            
+            // End can't be a number with "." or e
+            if(/(\d+\.\d*|e)$/.test(expCalc)) break;
+
+            //Can't add more numbers after it
+            if(/\d{22,}$/.test(expCalc)) {
+
+                displayError("Total number of Digits can't exceed 22!!", "digitError")
+                break;
+            }
             if (/[\)\%]$/.test(expCalc)) appendMultiply();
             
             // If last inputted value is not a number, then append "0" before "."
@@ -322,19 +361,22 @@ function parseInput(input) {
             }
 
             expression.textContent += input, expCalc += input;
-            updateResult();    
+
+            // Update result to parse erroring
+            updateResult();
+            
             break;
 
         default:
 
             // Append numbers
-            if (/^\d$/.test(input)){
+            if (/^\d$/.test(input) && !/(e|e[\+\-]\d{3,})$/.test(expCalc)){
                 
                 if (/[\)\%]$/.test(expCalc)) appendMultiply();
 
                 //Check validity
                 let digitValidation = validateDigit(expCalc+input);
-                if(digitValidation?.error) displayError(digitValidation.error);
+                if(digitValidation?.error) displayError(digitValidation.error, "digitError");
                 else expression.textContent += input, expCalc += input, updateResult();
                         
                     
@@ -345,24 +387,28 @@ function parseInput(input) {
             else if (/[\%\^\*\/\+\-]/.test(input)) {
 
                 // If Valid end
-                if (/[\d\)\%\^\*\/\+]$|(?<!\()\-$/g.test(expCalc)) {
+                if (/([\d\)\%\^\*\/\+]|(?<!\()\-|e[\+\-]|e)$/g.test(expCalc)) {
 
-                    // If end is operator to be replaced, trim.(can replace any by "%" but it can't be replaced)
-                    if (/[\^\*\/\+]$|(?<!\()\-$/g.test(expCalc)) {
+                    // If end is operator to be replaced, trim
+                    if (/([\^\*\/\+]|(?<!\()\-|e[\+\-])$/g.test(expCalc)) {
 
                         expression.textContent = expression.textContent.slice(0, -1);
                         expCalc = expCalc.slice(0, -1);
                     }
+                    if (expCalc.endsWith("e") && !/[\+\-]/.test(input)) break;
 
                     //account for operator difference in display "/", "*","-"    
                     expression.innerHTML += input === "*" ? "&times;" :
                                             input === "/" ? "&divide":
                                             input === "-" ? "&minus;": input;
                         
-                    expCalc += input;
+                    expCalc += input
+                    if (input === "%") updateResult();
                     
-                    //UpdateResult to check error values in expression
-                    updateResult();
+                    // Replace digitError with error, by updatingresult
+                    else if(expVal.classList.contains("error", "digitError")) updateResult();
+                        
+                    else if(!expVal.classList.contains("error")) expVal.textContent = '';
                 }
             }
     }
@@ -393,12 +439,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+// format with comma
 
-// error if +ve/-ve infinity, also, don't do unnecessary calc use update to return, check with devtools 
-// //check if pressed is used
+// error if +ve/-ve infinity, 
+// style expval after "="
 
 // fix expression overflow && expEval(???)
 
 // border-radius
 
 // clean cl(), refactor
+// check trimStart("-") is valid method
