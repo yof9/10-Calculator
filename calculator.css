@@ -7,6 +7,8 @@
 html, body {
     width: 100vw;
     height: 100vh;
+    background: linear-gradient(90deg, rgba(22, 22, 22, 0.3) 0% 10% , rgb(247, 245, 245),rgba(22, 22, 22, 0.3) 90%);
+
 }
 body {
     display: flex;
@@ -70,22 +72,22 @@ body {
 
 .wrapper:nth-child(2) {
     flex: 0 1 20%;
-    background-image: linear-gradient(180deg, rgb(158, 145, 145) 30%, rgb(231, 228, 209));
+    background-image: linear-gradient(180deg, rgb(22, 22, 22, .3) 30%, rgb(231, 228, 209));
     text-align: right;
     .expression, .eval {
         word-wrap:break-word;
     }
-    .expression {
+    .expression:not(.evaluated) {
         font-size: .8rem;
     }
-    .eval {
-        color:  rgb(9, 95, 9);
+    
+    .eval, .expression.evaluated {
+        color:  rgb(0,150,0);
         font-weight: 700;
         font-style: italic;
     }
-    .eval.error {
+    .eval.error, .eval.digitError {
         color: rgb(247, 15, 15);
-        text-shadow: .1em .1em .5em rgb(0 0 0);
     }
 }
 .wrapper:last-of-type{
@@ -95,7 +97,7 @@ body {
     padding: .5em 1em;
 }
 .row{
-    background-color: rgb(128, 128, 128);
+    background-color: rgba(22, 22, 22, 0.3);
     display: flex;
     justify-content: space-between;
     align-items: center;

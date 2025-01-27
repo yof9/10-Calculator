@@ -15,9 +15,8 @@ function appendMultiply() {
 
 function operate (a,b, operator) {
   
-    if (isNaN(a) || isNaN(b)) {
-        return null;
-    }
+    if (isNaN(a) || isNaN(b)) return null;
+    
     switch(operator) {
         case '+':
             return a + b;
@@ -27,8 +26,12 @@ function operate (a,b, operator) {
             return a * b;
         case '/':
             return a / b;
+        case '√':
+            return Math.sqrt(a);
+        case '%':
+            return a / 100;
         case '^':
-            
+
             // If positive base or exponent isn't a fraction
             if (a >= 0 || Math.abs(b) >= 1 || b == 0) return Math.pow(a, b)
             
@@ -37,11 +40,6 @@ function operate (a,b, operator) {
                 
             // if -ve base and exponent is a fraction (even root:handled by isError(), just precaution)
             return null 
-            
-        case '√':
-            return Math.sqrt(a);
-        case '%':
-            return a / 100;
     }
 }
 
@@ -78,7 +76,7 @@ function equals(exp) {
 }
 function isError(exp){
     
-    let errorMatch = null;
+    let errorMatch = null; 
 
     // Dividing by zero
     errorMatch = exp.matchAll(/(?:\/\-?)((?:\d+\.\d+|\d+(?!\.))(?:e[\+\-]\d+)?)/g);
@@ -100,7 +98,7 @@ function isError(exp){
     errorMatch = exp.matchAll(/(?:\-\d+(?:\.\d+)?(?:e[\+\-]\d+)?\^\-?)((?:\d+\.\d+|\d+(?!\.))(?:e[\+\-]\d+)?)/g);
     for (let ex of errorMatch) {
         if (+ex.at(1) > 0 && +ex.at(1) < 1 && (1 / +ex.at(1)) % 2 === 0) {
-            return {"error": "Negative Numbers Don't Have even Root!!"};
+            return {"error": "Negative Numbers Don't Have Even Root!!"};
         }
     }
 }
@@ -111,7 +109,7 @@ function validateDigit(num) {
     // More than 10 digits after decimal point
     errorMatch = num.match(/\.\d{18,}|\.\d{17,}(?=e[\+\-]\d+)/);
     if (errorMatch) {
-        return {"error": "Only 17 Digits allowed after Decimal Point!!"};
+        return {"error": "Only 17 Digits Allowed After Decimal Point!!"};
     }
 
     // More than 15 digits in total
@@ -120,25 +118,33 @@ function validateDigit(num) {
         if ((ex.at(1).concat(ex.at(2)).length > 22 && !ex.at(3)) || 
             (ex.at(1).concat(ex.at(2)).length > 21 && ex.at(3))
         ) { 
-            return {"error": "Total number of Digits can't exceed 22!!"};
+            return {"error": "Total Number Of Digits Can't Exceed 22!!"};
         }
     }
+    
+    // Infinity value
+    return +num === Infinity || +num === -Infinity ? 
+        {"error": "Numbers Can't Exceed Range!!"} : undefined;
 }
 
 function evaluate(exp) {
+    "use strict";
 
-    let errorChecked = null; 
+    let errorChecked;
 
     // If empty, NaN (NaN doesn't equal itself) or number
-    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?$/.test(exp)) {
-        errorChecked = isError(exp)
-        return errorChecked?.error ? errorChecked : exp;
-    }
-    
+    if (!exp || exp !== exp || /^\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?$/.test(exp)) return exp;
+
     // Do root, exponential, multiplication, division, percentage, addition, subtraction
     if (!/[()]/g.test(exp)) {
-        errorChecked = isError(exp)
-        return errorChecked?.error ? errorChecked : equals(exp);
+        
+        let errorChecked = isError(exp)
+        if (errorChecked?.error) return errorChecked
+
+        let result = equals(exp)
+        return result === result && result.includes("Infinity") ? 
+            {"error": "Value Out Of Range!!"} : result;
+
     }
     
     // Loop over all internal parenthesis replace them with their evaluated value
@@ -166,20 +172,16 @@ function displayError(error, errorClass) {
     expVal.textContent = error;
 
     // Set error styling
-    errorClass = errorClass || "error";
-
-    !expVal.classList.contains(errorClass) ? 
-    expVal.classList.add(errorClass) : undefined;
+    expVal.classList.add(errorClass || "error");
         
 
 }
 function displayValue(value) {
-    cl("vv",value, typeof value)
 
     // Assign value valid number
     if (/^\-?\d+(?:\.\d+)?(?:e[\+\-]\d+)?$/.test(value)) {
 
-        let parts = value.trimStart("-").replace(/e[\+\-]\d+$/, "1").split(".") 
+        let parts = value.replace(/^\-/, "").replace(/e[\+\-]\d+$/, "1").split(".") 
         
         value = parts.join("")?.length > 22 || parts.at(1)?.length > 17 ?
         (+value).toExponential(16) : value;
@@ -199,14 +201,16 @@ function updateResult() {
 
     // Pad then evaluate
     let evaluated = evaluate(padWithParenthesis(expCalc));
-    cl(evaluated)
-    
+
+    // Display result
     evaluated?.error ? displayError(evaluated.error) : displayValue(evaluated);
-    
+
 }
 
 function parseInput(input) {
-    
+
+    let changeTracker = expression.classList.contains("evaluated") ? expression.textContent: null;
+
     switch(input) {
 
         case 'c':
@@ -241,15 +245,14 @@ function parseInput(input) {
         case 'history':
 
             // Open history display with expression history
-            history.classList.contains("visible") ? undefined : history.classList.add("visible");
-           
+            history.classList.add("visible");
             break;
 
         case 'Escape':
         case 'close':
 
             // Close history display
-            history.classList.contains("visible") ? history.classList.remove("visible") : undefined
+            history.classList.remove("visible");
             break;
 
         case 'square-root':
@@ -305,6 +308,9 @@ function parseInput(input) {
             expression.textContent = expVal.textContent;
             expCalc = formattedExpVal;
             expVal.textContent = "";
+
+            // Style expression
+            expression.classList.add("evaluated")
             break;
 
         case '(':
@@ -350,9 +356,16 @@ function parseInput(input) {
             //Can't add more numbers after it
             if(/\d{22,}$/.test(expCalc)) {
 
-                displayError("Total number of Digits can't exceed 22!!", "digitError")
+                displayError("Total Number Of Digits Can't Exceed 22!!", "digitError")
                 break;
             }
+
+            // Scientific notaion don't allow for decimal points
+            if (/e[\+\-]\d*$/.test(expCalc)) {
+                displayError("Decimal Points Aren't Allowed In Scientific Notaion", "digitError")
+                break;
+            }
+
             if (/[\)\%]$/.test(expCalc)) appendMultiply();
             
             // If last inputted value is not a number, then append "0" before "."
@@ -412,41 +425,73 @@ function parseInput(input) {
                 }
             }
     }
+
+    //remove evaluated class from expression if the value was altered
+    changeTracker && changeTracker !== expression.textContent  ? 
+    expression.classList.remove("evaluated"): undefined
 } 
+
+function removeComma() {
+    expVal.textContent = expVal.textContent.replaceAll(",", "");
+    expression.textContent = expression.textContent.replaceAll(",", "");
+}
+
+function formatWithComma() {
+    expression.textContent = expression.textContent.replace(/(?<!e\d*|\.\d*)\B(?=(\d{3})+(?!\d))/g, ",");
+    expVal.textContent = expVal.textContent.replace(/(?<!e\d*|\.\d*)\B(?=(\d{3})+(?!\d))/g, ",");
+ }
+ function trimZero() {
+    
+    expression.textContent = expression.textContent.replace(/(?<!\.\d*|[1-9]0*)0(?!\.|\b)/g, "");
+    expVal.textContent = expVal.textContent.replace(/(?<!\.\d*|[1-9]0*)0(?!\.|\b)/g, "");
+    expCalc = expCalc.replace(/(?<!\.\d*|[1-9]0*)0(?!\.|\b)/g, "");
+    
+}
 
 document.addEventListener('DOMContentLoaded', function() {
         
     let btns = document.querySelectorAll('button');
     btns.forEach(btn => {
         btn.addEventListener('click', function() {
+            // Remove commas
+            removeComma();
+
+            // Process input
             parseInput(this.getAttribute("data-value"));
+            
+            // Trim leading zero
+            trimZero();
+
+            // Add comma
+            formatWithComma();
+
         });
     });
     document.addEventListener("keydown", (e) => {
         e.preventDefault()
+
+        // Remove commas
+        removeComma();
+
+        // Process input
         parseInput(e.key)
+
+        // Trim leading zero
+        trimZero();
+        
+        // Add commas
+        formatWithComma();
+
     });
 
     // Add functionality to close history by just clicking outside history
     document.addEventListener("click",(e) => {
 
         // elmt.closest()>returns closest ancester among selectors
-        if(e.target.getAttribute("data-value") !== "history" &&
-            !e.target.closest(".history")
-        ) {
-            history.classList.contains("visible") ? 
-            history.classList.remove("visible") : undefined 
-        }
+        e.target.getAttribute("data-value") !== "history" && !e.target.closest(".history") ?
+        history.classList.remove("visible") : undefined ;
     });
 });
-// format with comma
 
-// error if +ve/-ve infinity, 
-// style expval after "="
 
-// fix expression overflow && expEval(???)
-
-// border-radius
-
-// clean cl(), refactor
-// check trimStart("-") is valid method
+// fix expression overflow && expEval(???
