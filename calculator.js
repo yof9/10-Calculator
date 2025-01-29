@@ -381,7 +381,7 @@ function parseInput(input) {
 
             // Scientific notaion don't allow for decimal points
             if (/e[\+\-]\d*$/.test(expCalc)) {
-                displayError("Decimal Points Aren't Allowed In Scientific Notaion!!", "digitError")
+                displayError("Decimal Points Aren't Allowed In Scientific Notation!!", "digitError")
                 break;
             }
 
