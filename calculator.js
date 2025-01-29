@@ -107,18 +107,18 @@ function validateDigit(num) {
     let errorMatch = null;
 
     // More than 10 digits after decimal point
-    errorMatch = num.match(/\.\d{18,}|\.\d{17,}(?=e[\+\-]\d+)/);
+    errorMatch = num.match(/\.\d{11,}|\.\d{10,}(?=e[\+\-]\d+)/);
     if (errorMatch) {
-        return {"error": "Only 17 Digits Allowed After Decimal Point!!"};
+        return {"error": "Only 10 Digits Allowed After Decimal Point!!"};
     }
 
     // More than 15 digits in total
     errorMatch = num.matchAll(/(\d+)(?:\.)?(\d*)(e[\+\-]\d+)?/g);
     for (let ex of errorMatch) {
-        if ((ex.at(1).concat(ex.at(2)).length > 22 && !ex.at(3)) || 
-            (ex.at(1).concat(ex.at(2)).length > 21 && ex.at(3))
+        if ((ex.at(1).concat(ex.at(2)).length > 15 && !ex.at(3)) || 
+            (ex.at(1).concat(ex.at(2)).length > 14 && ex.at(3))
         ) { 
-            return {"error": "Total Number Of Digits Can't Exceed 22!!"};
+            return {"error": "Total Number Of Digits Can't Exceed 15!!"};
         }
     }
     
@@ -183,8 +183,8 @@ function displayValue(value) {
 
         let parts = value.replace(/^\-/, "").replace(/e[\+\-]\d+$/, "1").split(".") 
         
-        value = parts.join("")?.length > 22 || parts.at(1)?.length > 17 ?
-        (+value).toExponential(16) : value;
+        value = parts.join("")?.length > 15 || parts.at(1)?.length > 10 ?
+        (+value).toExponential(9) : value;
 
         expVal.innerHTML = value.replaceAll("-", "&minus;")
     }
@@ -199,12 +199,20 @@ function displayValue(value) {
 
 function updateResult() {
 
-    // Pad then evaluate
-    let evaluated = evaluate(padWithParenthesis(expCalc));
+    // If not a valid expression just chek error, else pad then evaluate
+    let evaluated = !/[\d\%]$/.test(expCalc.replace(/[\(\)]+$/g, "")) ? 
+                    isError(expCalc) :
+                    evaluate(padWithParenthesis(expCalc));
 
     // Display result
     evaluated?.error ? displayError(evaluated.error) : displayValue(evaluated);
 
+}
+
+function activateBtn(dataValue) {
+    let btn = document.querySelector(`[data-value="${dataValue}"]`);
+    btn.classList.add("active");
+    setTimeout(()=>{btn.classList.remove("active")}, 100);
 }
 
 function parseInput(input) {
@@ -216,6 +224,7 @@ function parseInput(input) {
         case 'c':
         case 'C':
         case 'clear':
+            activateBtn('clear')
 
             // Clear all
             expression.textContent = expVal.textContent = expCalc = '';
@@ -229,6 +238,7 @@ function parseInput(input) {
         case 'Backspace':
         case 'D':
         case 'd':
+            activateBtn("d")
 
             // Delete last character
             expression.textContent = expression.textContent.slice(0, -1);
@@ -238,7 +248,6 @@ function parseInput(input) {
 
         case 'H':
         case 'h':
-
             history.classList.toggle("visible");
             break;
 
@@ -255,7 +264,9 @@ function parseInput(input) {
             history.classList.remove("visible");
             break;
 
+        case 'r':
         case 'square-root':
+            activateBtn('square-root')
 
             // User tried to enter illegal square-root
             if(/(\.|e[\+\-]?)$/.test(expCalc)) break; 
@@ -271,6 +282,7 @@ function parseInput(input) {
         case 'N':
         case 'n':
         case 'negative':
+            activateBtn('negative')
 
             // User tried to enter illegal negation
             if(/(\.|e[\+\-]?)$/.test(expCalc)) break;
@@ -285,6 +297,7 @@ function parseInput(input) {
 
         case 'Enter':
         case '=':
+            activateBtn('=')
 
             // If digit error update expval
             if(expVal.classList.contains("digitError")) updateResult();
@@ -315,18 +328,23 @@ function parseInput(input) {
 
         case '(':
         case ')':
-        case '()':
+        case 'parenthesis':
+            activateBtn('parenthesis')
 
-            // User tried to enter illegal close parenthesis, do nothing
-            if(input === ')' || /(\.|e[\+\-]?)$/.test(expCalc)) break;
-            
+            // User tried to enter illegal parenthesis, do nothing
+            if(/(\.|e[\+\-]?)$/.test(expCalc)) break;
+
             // Open if empty, operator/"("" precedes it, or equal numbers of open and close parenthesis
             if (
                 (!expCalc ||
                 /[\(\^\*\/\+\-\√]$/.test(expCalc) ||
                 expCalc.split("(").length === 
-                expCalc.split(")").length)
+                expCalc.split(")").length) ||
+                (input === "(" && /[\d\)\%]$/.test(expCalc))
             ) {
+
+                // User tried to enter illegal close parenthesis, do nothing
+                if(input === ')') break;
 
                 // If last inputted value is a number/"%"/")" append "*(" to expression
                 if (/[\d\)\%]$/.test(expCalc)) appendMultiply();
@@ -349,20 +367,21 @@ function parseInput(input) {
             break;
         
         case ".": 
+            activateBtn(input)
             
             // End can't be a number with "." or e
             if(/(\d+\.\d*|e)$/.test(expCalc)) break;
 
             //Can't add more numbers after it
-            if(/\d{22,}$/.test(expCalc)) {
+            if(/\d{15,}$/.test(expCalc)) {
 
-                displayError("Total Number Of Digits Can't Exceed 22!!", "digitError")
+                displayError("Total Number Of Digits Can't Exceed 15!!", "digitError")
                 break;
             }
 
             // Scientific notaion don't allow for decimal points
             if (/e[\+\-]\d*$/.test(expCalc)) {
-                displayError("Decimal Points Aren't Allowed In Scientific Notaion", "digitError")
+                displayError("Decimal Points Aren't Allowed In Scientific Notaion!!", "digitError")
                 break;
             }
 
@@ -385,6 +404,8 @@ function parseInput(input) {
             // Append numbers
             if (/^\d$/.test(input) && !/(e|e[\+\-]\d{3,})$/.test(expCalc)){
                 
+                activateBtn(input)
+                
                 if (/[\)\%]$/.test(expCalc)) appendMultiply();
 
                 //Check validity
@@ -398,6 +419,7 @@ function parseInput(input) {
             
             // Append symbols
             else if (/[\%\^\*\/\+\-]/.test(input)) {
+                activateBtn(input)
 
                 // If Valid end
                 if (/([\d\)\%\^\*\/\+]|(?<!\()\-|e[\+\-]|e)$/g.test(expCalc)) {
@@ -426,11 +448,18 @@ function parseInput(input) {
             }
     }
 
-    //remove evaluated class from expression if the value was altered
+    // Remove evaluated class from expression if the value was altered
     changeTracker && changeTracker !== expression.textContent  ? 
-    expression.classList.remove("evaluated"): undefined
-} 
+    expression.classList.remove("evaluated"): undefined;
 
+    // Scroll to bottom regardless of insert or not
+    setTimeout(() => {
+        expression.parentElement.scrollTo({
+            top: expression.parentElement.scrollHeight,
+            behavior: "smooth"
+        });
+    }, 2); 
+}
 function removeComma() {
     expVal.textContent = expVal.textContent.replaceAll(",", "");
     expression.textContent = expression.textContent.replaceAll(",", "");
@@ -447,45 +476,40 @@ function formatWithComma() {
     expCalc = expCalc.replace(/(?<!\.\d*|[1-9]0*)0(?!\.|\b)/g, "");
     
 }
+function processInput(input) {
+    // Remove commas
+    removeComma();
+
+    // Process input
+    parseInput(input);
+    
+    // Trim leading zero
+    trimZero();
+
+    // Add comma
+    formatWithComma();
+}
+
 
 document.addEventListener('DOMContentLoaded', function() {
         
-    let btns = document.querySelectorAll('button');
+    let btns = document.querySelectorAll(".char, [data-value='close']");
     btns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Remove commas
-            removeComma();
+        btn.addEventListener('pointerdown', function() {
 
-            // Process input
-            parseInput(this.getAttribute("data-value"));
+            processInput(this.getAttribute("data-value"));
             
-            // Trim leading zero
-            trimZero();
-
-            // Add comma
-            formatWithComma();
-
         });
     });
     document.addEventListener("keydown", (e) => {
-        e.preventDefault()
-
-        // Remove commas
-        removeComma();
-
-        // Process input
-        parseInput(e.key)
-
-        // Trim leading zero
-        trimZero();
         
-        // Add commas
-        formatWithComma();
+        e.preventDefault()
+        processInput(e.key)
 
     });
 
     // Add functionality to close history by just clicking outside history
-    document.addEventListener("click",(e) => {
+    document.addEventListener("pointerdown",(e) => {
 
         // elmt.closest()>returns closest ancester among selectors
         e.target.getAttribute("data-value") !== "history" && !e.target.closest(".history") ?
@@ -493,5 +517,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
-// fix expression overflow && expEval(???
